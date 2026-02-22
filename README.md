@@ -12,7 +12,9 @@
 
   Furthermore, while it is undeniable that consumer behaviors are impacted by reviews, the magnitude of that impact appears to vary across industries and business types. Past research demonstrates that consumers rely more on reviews for optional services given at beauty salons or restaurants than essential services such as healthcare (Hu, Liu, & Zhang, 2008). It is, therefore, essential to consider the effect the industry of the business plays when reviews are analyzed. Given this tension, this research aims to explore: “Does the density of certain businesses within a postal code associate with higher or lower average Yelp ratings, and how does this relationship vary across business industries?”
 
-For business owners, the findings can inform location strategy and competitive positioning by clarifying when dense clusters are likely to help or hurt evaluations across categories, supporting better benchmarking, service and pricing decisions, and more targeted expansion or franchising choices.
+For business owners, the findings can inform location strategy and competitive positioning by clarifying when dense clusters are likely to help or hurt evaluations across categories, supporting better benchmarking, service and pricing decisions, and more targeted expansion or franchising choices. 
+
+The findings are also relevant for landlords and urban planners, as density patterns influence foot traffic, commercial attractiveness, and rental values.
 
 
 ## Data
@@ -55,7 +57,10 @@ The dataset was then explored using ggplot2 visualizations. Having plotted sever
 
 
 - Describe the gist of your findings (save the details for the final paper!)
+
 - How are the findings/end product of the project deployed?
+The findings are summarized in a PDF report, which includes key visualizations, regression results, interpretations, and implications. The report translates statistical results into clear insights on location strategy for business owners across categories.
+
 - Explain the relevance of these findings/product. 
 
 ## Repository Overview 
