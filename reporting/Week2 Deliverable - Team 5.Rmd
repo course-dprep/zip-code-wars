@@ -26,12 +26,36 @@ The research aims to use Linear Regression with Interaction Terms as the chosen 
 # Data Exploration
 ## Load the Dataset
 ```{r, message= FALSE, warning= FALSE}
-#install.packages("dplyr")
+# Install.packages(c("dplyr", "googledrive"))  
+## Run once, not every time
 library(dplyr)
+library(googledrive)
 
-list.files("raw_data")
-yelp_business <- read.csv("yelp_academic_dataset_business.csv") 
-#View(yelp_business)
+# Authenticate (opens browser)
+drive_auth()
+
+# Folder ID
+folder_id <- "1WHSh8ZQYzQ3IQI8tJX90cYGR4bDy13v3"
+
+# List files in folder
+files <- drive_ls(as_id(folder_id))
+
+# Find target file
+file <- files |>
+  filter(name == "yelp_academic_dataset_business.csv")
+
+# Sanity check
+stopifnot(nrow(file) == 1)
+
+# Download using file ID
+drive_download(
+  file,
+  path = "yelp_business.csv",
+  overwrite = TRUE
+)
+
+# Read data
+yelp_business <- read.csv("yelp_business.csv")
 ```
 
 ```{r, message= FALSE, warning= FALSE}
