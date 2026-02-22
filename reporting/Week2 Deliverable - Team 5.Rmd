@@ -26,6 +26,7 @@ The research aims to use Linear Regression with Interaction Terms as the chosen 
 # Data Exploration
 ## Load the Dataset
 ```{r, message= FALSE, warning= FALSE}
+
 # Full file link
 #https://drive.google.com/file/d/13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x/view?usp=share_link
 
@@ -38,16 +39,6 @@ url <- paste0("https://drive.google.com/uc?export=download&id=", file_id)
 download.file(url,destfile = "yelp_academic_dataset_business.csv",mode = "wb")
 
 yelp_business <- read.csv("yelp_academic_dataset_business.csv")
-
-# For manual data loading 
-
-#install.packages("dplyr")
-#library(dplyr)
-
-#list.files("raw_data")
-#yelp_business <- read.csv("raw_data/yelp_academic_dataset_business.csv") 
-#View(yelp_business)
-
 ```
 
 ```{r, message= FALSE, warning= FALSE}
