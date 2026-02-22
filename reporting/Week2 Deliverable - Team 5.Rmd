@@ -26,12 +26,19 @@ The research aims to use Linear Regression with Interaction Terms as the chosen 
 # Data Exploration
 ## Load the Dataset
 ```{r, message= FALSE, warning= FALSE}
-#install.packages("dplyr")
-library(dplyr)
 
-list.files("raw_data")
-yelp_business <- read.csv("yelp_academic_dataset_business.csv") 
-#View(yelp_business)
+# Full file link
+#https://drive.google.com/file/d/13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x/view?usp=share_link
+
+#install.packages("googledrive")
+
+library(googledrive)
+file_id <- "13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x"
+url <- paste0("https://drive.google.com/uc?export=download&id=", file_id)
+
+download.file(url,destfile = "yelp_academic_dataset_business.csv",mode = "wb")
+
+yelp_business <- read.csv("yelp_academic_dataset_business.csv")
 ```
 
 ```{r, message= FALSE, warning= FALSE}
@@ -42,15 +49,13 @@ summary(yelp_business$postal_code) #Already characters don't need to change
 ## Extract columns needed for analysis (create a new dataset)
 ```{r, message= FALSE, warning= FALSE}
 columns = c("state","postal_code","city","review_count","name","categories","stars")
-research_project <- yelp_business %>%
-  select(all_of(columns))
+research_project <- yelp_business %>% select(all_of(columns))
 #View(research_project) 
 ```
 
 ## Data cleaning (remove all NAs in postal code)
 ```{r, message= FALSE, warning= FALSE}
-research_project_filtered <- research_project %>%
-  filter(postal_code != "")
+research_project_filtered <- research_project %>% filter(postal_code != "")
 #View(research_project_filtered)
 ```
 
