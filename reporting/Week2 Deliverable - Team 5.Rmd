@@ -26,7 +26,12 @@ The research aims to use Linear Regression with Interaction Terms as the chosen 
 # Data Exploration
 ## Load the Dataset
 ```{r, message= FALSE, warning= FALSE}
-
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(knitr)
+library(rmarkdown)
+library(tidyverse)
 # Full file link
 #https://drive.google.com/file/d/13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x/view?usp=share_link
 
@@ -178,33 +183,54 @@ ggplot(
     y = "Yelp Star Rating"
   )
 ```
+## Plotting Aggregated Ratings in zip code and category level
+
+```{r,message= FALSE, warning= FALSE}
+# make new data with average starts per zip code
+zip_summary <- research_project_density %>%
+  group_by(postal_code, industry_categorized, industry_zip_count) %>%
+  summarise(avg_stars = mean(stars, na.rm = TRUE),
+    .groups = "drop")
+
+# reorder data based on density
+zip_summary <- zip_summary %>% arrange(industry_zip_count)
+```
 
 
-
-
-
-
-
-
-
-
-
-## Smoothed Plotting: 
-```{r, message= FALSE, warning= FALSE}
+```{r,message= FALSE, warning= FALSE}
 ggplot(
-  research_project_density,
-  aes(x = industry_zip_count, y = stars)
+  zip_summary,
+  aes(x = industry_zip_count, y = avg_stars)
 ) +
-  geom_jitter(alpha = 0.1, width = 0) +
-  geom_smooth(method = "loess", se = FALSE) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", se = TRUE) +
   scale_x_log10() +
   facet_wrap(~ industry_categorized) +
   labs(
-    title = "Smoothed Relationship Between Density and Ratings by Industry",
-    x = "Same-Industry ZIP Density (log)",
-    y = "Average Yelp Rating"
-  )
+    title = "Average Yelp Rating vs Same-Industry Business Density (Ascending order)",
+    x = "Same-Industry Businesses per ZIP (log scale)",
+    y = "Average Yelp Star Rating"
+  ) +
+  theme_minimal()
+```
+```{r}
+# Filter to only ZIP codes with 10 or more businesses
+zip_summary_filtered <- zip_summary %>% filter(industry_zip_count >= 10)
 
+ggplot(
+  zip_summary_filtered,
+  aes(x = industry_zip_count, y = avg_stars)
+) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", se = TRUE) +
+  scale_x_log10() +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Average Yelp Rating vs Same-Industry Business Density (Ascending order)",
+    x = "Same-Industry Businesses per ZIP (log scale)",
+    y = "Average Yelp Star Rating"
+  ) +
+  theme_minimal()
 ```
 
 
