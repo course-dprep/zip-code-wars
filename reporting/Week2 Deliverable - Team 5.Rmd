@@ -35,7 +35,7 @@ library(tidyverse)
 # Full file link
 #https://drive.google.com/file/d/13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x/view?usp=share_link
 
-#install.packages("googledrive")
+install.packages("googledrive")
 
 library(googledrive)
 file_id <- "13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x"
@@ -53,6 +53,7 @@ summary(yelp_business$postal_code) #Already characters don't need to change
 
 ## Extract columns needed for analysis (create a new dataset)
 ```{r, message= FALSE, warning= FALSE}
+library(tidyverse)
 columns = c("state","postal_code","city","review_count","name","categories","stars")
 research_project <- yelp_business %>% select(all_of(columns))
 #View(research_project) 
@@ -192,31 +193,8 @@ zip_summary <- research_project_density %>%
   summarise(avg_stars = mean(stars, na.rm = TRUE),
     .groups = "drop")
 
-# reorder data based on density
-zip_summary <- zip_summary %>% arrange(industry_zip_count)
-```
-
-
-```{r,message= FALSE, warning= FALSE}
-ggplot(
-  zip_summary,
-  aes(x = industry_zip_count, y = avg_stars)
-) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "loess", se = TRUE) +
-  scale_x_log10() +
-  facet_wrap(~ industry_categorized) +
-  labs(
-    title = "Average Yelp Rating vs Same-Industry Business Density (Ascending order)",
-    x = "Same-Industry Businesses per ZIP (log scale)",
-    y = "Average Yelp Star Rating"
-  ) +
-  theme_minimal()
-```
-```{r,message= FALSE, warning= FALSE}
-# Filter to only ZIP codes with 10 or more businesses
-zip_summary_filtered <- zip_summary %>% filter(industry_zip_count >= 10)
-
+## Smoothed Plotting: 
+```{r, message= FALSE, warning= FALSE}
 ggplot(
   zip_summary_filtered,
   aes(x = industry_zip_count, y = avg_stars)
@@ -288,6 +266,154 @@ ggplot(zip_binned,
     panel.grid.minor = element_blank()
   )
 ```
+
+
+## Data Engineering: Merging Datasets (yelp_checkin)
+```{r, message= FALSE, warning= FALSE}
+# Full file link: 
+# https://drive.google.com/file/d/1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG/view?usp=drive_link
+
+library(googledrive)
+
+file_id <- "1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG"
+
+# Download the actual CSV to your working directory
+drive_download(as_id(file_id),
+               path = "yelp_academic_dataset_checkin.csv",
+               overwrite = TRUE)
+
+# Read it in R
+yelp_checkin <- read.csv("yelp_academic_dataset_checkin.csv", stringsAsFactors = FALSE)
+
+# Before merging, first clean checkin data (First cleanse date-time format to keep date only) 
+# Definition of check-in: Check-Ins are a way to keep track of the local businesses you visit and keep your friends updated with your latest comings and goings.
+# Rationale for merging checkin data: To control for differences in customer traffic across businesses, which may influence average Yelp ratings independently of local competitive density. (treat as "control variable")
+
+yelp_checkin_clean <- yelp_checkin %>%
+  separate_rows(date, sep = ",\\s*") %>%
+  mutate(
+    good_date = as.Date(lubridate::ymd_hms(date)),
+    year      = lubridate::year(good_date),
+    week      = lubridate::isoweek(good_date)
+  )
+View(yelp_checkin_clean)
+
+# Count the checkin frequency for each business_id
+business_checkin_count <- yelp_checkin_clean %>% 
+  group_by(business_id) %>% 
+  summarize(checkin_count = n()) 
+
+# Merge the data 
+merged_research_project <- research_project_density %>% left_join(business_checkin_count, by = c("business_id" = "business_id"))
+View(merged_research_project)
+
+# Running the regression model for each business category
+library(broom)
+
+results_by_industry <- merged_research_project %>%
+  group_by(industry_categorized) %>%
+  group_modify(~ tidy(
+    lm(
+      stars ~ industry_zip_count * checkin_count,
+      data = .x
+    )
+  ))
+
+# Summary of results
+View(results_by_industry)
+# Analysis
+
+The analysis section of this study takes the currently cleaned and explored data and tests regression models on the variables to observe the effect of business density on ratings (mdoerated by business category). Therefore the variables used in the regression analyses can be explained as such:
+	•	Dependent variable: stars
+	•	Main predictor: industry_zip_count
+	•	Moderator: industry_categorized
+	•	Interaction: industry_zip_count * industry_categorized
+	
+Since in the previous plots it was observed that density is skewed, a log-scale will also be implemented in the regression modelling as well.
+
+```{r, message=FALSE, warning=FALSE}
+
+# Creating log-scaled density variable (log1p is used to better handle 0 values in density)
+research_project_regression <- research_project_density %>%
+  mutate(
+    log_density = log1p(industry_zip_count))
+
+# Base Regression model tested (without interaction effect)
+base_regression <- lm(stars ~ log_density,data = research_project_regression)
+summary(base_regression)
+
+```
+## Interpretation of Base Regression model
+The base regression model reports that the p-value for log_density(density of businesses in same zip code) is <2e-16 *** and a t-value of 12.85. This can be interpreted to say that *there is a significant zip code density effect on ratings*. 
+
+The data is then further explored with a more complex regression model, one that includes the effect of business categories on the relationship between business zip code density and ratings given on Yelp:
+
+```{r, message=FALSE, warning=FALSE}
+# Regression model with business categories added:
+regression_with_categories <- lm( stars ~ log_density + industry_categorized, data = research_project_regression)
+
+summary(regression_with_categories)
+```
+## Interpretation of Regression model with business categories
+The regression model including business categories as another variable reports that the p-values for  log_density, industry_categorizedFood & Drink , industry_categorizedHealth & Beauty,industry_categorizedOther, industry_categorizedVeterinarians & Pet Shops all have statistically significant p-values. This observation can be interpreted in a way that shows *both business zip code density and business categories have statistically signifiant impact on ratings* given on Yelp. Here, business zip code density is still assumed to affect all business categories equally.
+
+The data is then further explored with a third regression model, one that includes the effect of business categories as an interaction term:
+
+```{r, message=FALSE, warning=FALSE}
+#Regression model with business categories added as an interaction term:
+regression_with_interaction <- lm(stars ~ log_density * industry_categorized,data = research_project_regression)
+
+summary(regression_with_interaction)
+summary(regression_with_interaction)$r.squared
+
+#Calculating slopes for different business categories:
+#Health & Beauty = 0.0701 + 0.0618 = 0.1319 (p-value significant)
+#Food & Drink = 0.0701 − 0.0224 = 0.0477 (p-value significant)
+#Other =  0.0701-0.0058 = 0.0121 (p-value not significant)
+#Veterinarians & Pet Shops = 0.0701 + 0.0375 = 0.1076 (p-value not significant)
+
+#Comparing results of two regression models with Anova to confirm best model fit:
+
+anova(regression_with_categories, regression_with_interaction)
+
+```
+
+## Interpretation of Regression model with business categories as interaction term
+This regression model including business categories as interaction terms suggest several findings:
+* Density increases ratings for businesses in the Food and Drink industry, but the effect is weaker in comparison to the baseline.
+* In Health and Beauty industry, density has a stronger positive effect.
+* The slope is almost 0 for industries listed in the Other category, indicating no meaningful difference.
+* For businesses in the same industry as Veterinarians and Pet Shops, even though there seems to be a positive slope, since the p-value is seen to be not statistically significant, we cannot confidently say that business zip code density effect differs for this type of business.
+All of these results may suggest that *while competitive clustering can enhance ratings in some industries more than others, business industry does moderate the relationship between density and ratings*.
+
+## Interpretation of ANOVA for better model fit
+An ANOVA analysis is also done to confirm that the addition of business categories as an interaction term improves model fit. The p-value is seen to be highly significant, suggesting that the interaction terms do improve the model fit and that business industry does moderate the zip code density–rating relationship.
+
+## Commenting on R Squared
+A relatively low R Squared value is observed with 0.015217. This,however, can be due to the dependent variable Yelp ratings being a subjective variable related to human behavior or the Yelp dataset used being cross-sectional real-world data. The rest of the change in business ratings can be explained with many other factors such as service quality, price level, customer expectations etc. which are not observed in this study.
+
+```{r}
+# Plotting the final regression model:
+ggplot(research_project_regression,
+       aes(x = log_density,
+           y = stars,
+           color = industry_categorized)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Interaction Between Density and Industry",
+    x = "Log Same-Industry Density",
+    y = "Yelp Stars" )
+
+
+```
+
+
+
+
+
+
+
+
 
 
 
