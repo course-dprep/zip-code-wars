@@ -213,7 +213,7 @@ ggplot(
   ) +
   theme_minimal()
 ```
-```{r}
+```{r,message= FALSE, warning= FALSE}
 # Filter to only ZIP codes with 10 or more businesses
 zip_summary_filtered <- zip_summary %>% filter(industry_zip_count >= 10)
 
@@ -232,5 +232,62 @@ ggplot(
   ) +
   theme_minimal()
 ```
+```{r,message= FALSE, warning= FALSE}
+library(dplyr)
+
+zip_binned <- zip_summary %>%
+  filter(industry_zip_count >= 10) %>%   # optional but recommended
+  mutate(
+    density_bin = cut(
+      industry_zip_count,
+      breaks = c(10, 20, 50, 100, 200, Inf),
+      include.lowest = TRUE,
+      right = FALSE
+    )
+  ) %>%
+  group_by(industry_categorized, density_bin) %>%
+  summarise(
+    mean_rating = mean(avg_stars, na.rm = TRUE),
+    n_zips      = n(),
+    .groups = "drop"
+  )
+```
+
+```{r,message= FALSE, warning= FALSE}
+library(ggplot2)
+
+ggplot(zip_binned, aes(x = density_bin, y = mean_rating, size = n_zips)) +
+  geom_point(color = "firebrick") +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Mean Yelp Rating by Business Density Bin (ZIP level)",
+    x = "Same-Industry Businesses per ZIP",
+    y = "Mean Yelp Rating",
+    size = "Number of ZIP Codes"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank())
+
+```
+```{r,message= FALSE, warning= FALSE}
+ggplot(zip_binned,
+       aes(x = density_bin, y = mean_rating, group = industry_categorized)) +
+  geom_line(color = "firebrick") +
+  geom_point(color = "firebrick", size = 3) +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Mean Yelp Rating by Business Density Bin (ZIP level)",
+    x = "Same-Industry Businesses per ZIP (Density Bin)",
+    y = "Mean Yelp Rating"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank()
+  )
+```
+
 
 
