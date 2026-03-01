@@ -26,7 +26,12 @@ The research aims to use Linear Regression with Interaction Terms as the chosen 
 # Data Exploration
 ## Load the Dataset
 ```{r, message= FALSE, warning= FALSE}
-
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(knitr)
+library(rmarkdown)
+library(tidyverse)
 # Full file link
 #https://drive.google.com/file/d/13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x/view?usp=share_link
 
@@ -179,25 +184,89 @@ ggplot(
     y = "Yelp Star Rating"
   )
 ```
+## Plotting Aggregated Ratings in zip code and category level
 
+```{r,message= FALSE, warning= FALSE}
+# make new data with average starts per zip code
+zip_summary <- research_project_density %>%
+  group_by(postal_code, industry_categorized, industry_zip_count) %>%
+  summarise(avg_stars = mean(stars, na.rm = TRUE),
+    .groups = "drop")
 
 ## Smoothed Plotting: 
 ```{r, message= FALSE, warning= FALSE}
 ggplot(
-  research_project_density,
-  aes(x = industry_zip_count, y = stars)
+  zip_summary_filtered,
+  aes(x = industry_zip_count, y = avg_stars)
 ) +
-  geom_jitter(alpha = 0.1, width = 0) +
-  geom_smooth(method = "loess", se = FALSE) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", se = TRUE) +
   scale_x_log10() +
   facet_wrap(~ industry_categorized) +
   labs(
-    title = "Smoothed Relationship Between Density and Ratings by Industry",
-    x = "Same-Industry ZIP Density (log)",
-    y = "Average Yelp Rating"
+    title = "Average Yelp Rating vs Same-Industry Business Density (Ascending order)",
+    x = "Same-Industry Businesses per ZIP (log scale)",
+    y = "Average Yelp Star Rating"
+  ) +
+  theme_minimal()
+```
+```{r,message= FALSE, warning= FALSE}
+library(dplyr)
+
+zip_binned <- zip_summary %>%
+  filter(industry_zip_count >= 10) %>%   # optional but recommended
+  mutate(
+    density_bin = cut(
+      industry_zip_count,
+      breaks = c(10, 20, 50, 100, 200, Inf),
+      include.lowest = TRUE,
+      right = FALSE
+    )
+  ) %>%
+  group_by(industry_categorized, density_bin) %>%
+  summarise(
+    mean_rating = mean(avg_stars, na.rm = TRUE),
+    n_zips      = n(),
+    .groups = "drop"
   )
+```
+
+```{r,message= FALSE, warning= FALSE}
+library(ggplot2)
+
+ggplot(zip_binned, aes(x = density_bin, y = mean_rating, size = n_zips)) +
+  geom_point(color = "firebrick") +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Mean Yelp Rating by Business Density Bin (ZIP level)",
+    x = "Same-Industry Businesses per ZIP",
+    y = "Mean Yelp Rating",
+    size = "Number of ZIP Codes"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank())
 
 ```
+```{r,message= FALSE, warning= FALSE}
+ggplot(zip_binned,
+       aes(x = density_bin, y = mean_rating, group = industry_categorized)) +
+  geom_line(color = "firebrick") +
+  geom_point(color = "firebrick", size = 3) +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Mean Yelp Rating by Business Density Bin (ZIP level)",
+    x = "Same-Industry Businesses per ZIP (Density Bin)",
+    y = "Mean Yelp Rating"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank()
+  )
+```
+
 
 ## Data Engineering: Merging Datasets (yelp_checkin)
 ```{r, message= FALSE, warning= FALSE}
