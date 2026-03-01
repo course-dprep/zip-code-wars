@@ -24,35 +24,148 @@ Once the industry classification procedure was completed, the research focused o
 The research aims to use Linear Regression with Interaction Terms as the chosen method of analysis after data is explored, so that both the main relationship between the density of businesses within a postal code and Yelp ratings can be examined along with the moderating effect of industry of the business. The predicted model for the study can be seen as such: lm(rating(stars) ~ business_density + business_industry + business_density:business_category)
 
 # Data Exploration
-## Load the Dataset
-```{r, message= FALSE, warning= FALSE}
-#install.packages("dplyr")
+library(googledrive)
 library(dplyr)
 
-list.files("raw_data")
-yelp_business <- read.csv("yelp_academic_dataset_business.csv") 
-#View(yelp_business)
-```
+file_id <- "13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x"
+url <- paste0("https://drive.google.com/uc?export=download&id=", file_id)
 
-```{r, message= FALSE, warning= FALSE}
-#table(yelp_business$postal_code)
-summary(yelp_business$postal_code) #Already characters don't need to change 
-```
+download.file(
+  url,
+  destfile = "yelp_academic_dataset_business.csv",
+  mode = "wb"
+)
 
-## Extract columns needed for analysis (create a new dataset)
-```{r, message= FALSE, warning= FALSE}
-columns = c("state","postal_code","city","review_count","name","categories","stars")
+yelp_business <- read.csv("yelp_academic_dataset_business.csv")
+
+# Explore postal code variable
+summary(yelp_business$postal_code)
+
+# Extract columns needed for analysis
+columns <- c("state","postal_code","city","review_count","name","categories","stars","business_id")
+
 research_project <- yelp_business %>%
   select(all_of(columns))
-#View(research_project) 
-```
 
-## Data cleaning (remove all NAs in postal code)
-```{r, message= FALSE, warning= FALSE}
-research_project_filtered <- research_project %>%
-  filter(postal_code != "")
-#View(research_project_filtered)
-```
+research_project_filtered <- research_project %>% filter(postal_code != "")
+
+#Convert json into csv (do this in terminal)
+cd ~/Desktop/yelp_convert 
+python3 --version
+python3 -m pip install pandas 
+python3 json_to_csv_converter.py yelp_academic_dataset_checkin.json
+
+# Load datset checkin
+library(readr)
+yelp_checkin <- read_csv("Convert/yelp_academic_dataset_checkin.csv")
+View(yelp_checkin)
+
+#Load dataset user
+library(readr)
+yelp_user <- read_csv("Convert/yelp_academic_dataset_user.csv")
+View(yelp_user)
+
+#Separate business categories
+
+library(data.table)
+
+setDT(research_project_filtered)
+research_project_filtered[, state_categories := as.factor(state)]
+research_project_filtered[,  postal_code_categories := as.factor( postal_code)]
+research_project_filtered[,  city_categories := as.factor( city)]
+
+#seeing wich category is used how many times to decide on the industry labels, checking for top 20 most used
+research_project_filtered[
+  , .(category = tolower(trimws(unlist(categories))))
+][
+  , .N, by = category
+][
+  order(-N)
+][1:20]
+
+#determining the top categories and turning them into 5 main categories
+
+#cleaning categories entries and turning all lowercase
+research_project_filtered[, categories_text := tolower(as.character(categories))]
+research_project_filtered[, industry_categorized := "Other"]
+
+research_project_filtered[grepl("restaurants|food|coffee|tea|mexican|italian|burgers|pizza|ice cream|yogurt|chinese",
+                                categories_text),
+                          industry_categorized := "Food & Drink"]
+
+research_project_filtered[grepl("beauty|spa|hair|nail",
+                                categories_text),
+                          industry_categorized := "Health & Beauty"]
+
+research_project_filtered[grepl("veterinarians|pets",
+                                categories_text),
+                          industry_categorized := "Veterinarians & Pet Shops"]
+
+research_project_filtered[grepl("auto|automotive|repair",
+                                categories_text),
+                          industry_categorized := "Auto & Transport"]
+
+summary(research_project_filtered)
+research_project_filtered[,  industry_categorized := as.factor( industry_categorized)]
+
+#
+zip_industry_density <- research_project_filtered %>%
+  group_by(postal_code, industry_categorized) %>%
+  summarise(
+    industry_zip_count = n(),
+    .groups = "drop"
+  )
+
+research_project_density <- research_project_filtered %>%
+  left_join(
+    zip_industry_density,
+    by = c("postal_code", "industry_categorized")
+  )
+
+library(stringr)
+library(dplyr)
+
+#Calculate total of checkin
+yelp_checkin <- yelp_checkin %>%
+  mutate(
+    total_checkins = ifelse(
+      is.na(date) | date == "",
+      0,
+      str_count(date, ",") + 1
+    )
+  )
+
+#Merge dataset 
+merged_data <- research_project_filtered %>%
+  left_join(
+    yelp_checkin %>% select(business_id, total_checkins),
+    by = "business_id"
+  )
+
+#Use as control variable 
+review_count is a biased proxy for popularity because not all visitors leave reviews and review 
+propensity differs by industry 
+
+# Creating log-scaled density variable (log1p is used to better handle 0 values in density)
+merged_data <- research_project_density %>%
+  mutate(
+    log_density = log1p(industry_zip_count))
+merged_data2$total_checkins <- as.numeric(merged_data$total_checkins)
+merged_data2$log_checkins <- log1p(merged_data$total_checkins)
+
+# Base Regression model tested (without interaction effect)
+regression <- lm(stars ~ log_density + review_count,
+                      data = merged_data)
+summary(regression)
+
+#Interpretation: 
+After controlling for review count, business density remains positively and statistically significantly
+associated with Yelp star ratings. Specifically, a one unit increase in log density is linked to a 0.019 
+increase in stars, holding review volume constant. Review count itself is also positively related to ratings, 
+though the effect size per review is very small. However, the overall explanatory power of the model is very low, 
+with an R squared of 0.004, indicating that density and review volume explain only a small fraction of the variation 
+in ratings.
+
 
 ## Data visualization with ggplot 2 
 ```{r, message= FALSE, warning= FALSE}
@@ -89,50 +202,6 @@ research_project_filtered %>%
 
 ```
 
-## Dive Deeper into separate business categories
-```{r, message= FALSE, warning= FALSE}
-library(data.table)
-
-setDT(research_project_filtered)
-research_project_filtered[, state_categories := as.factor(state)]
-research_project_filtered[,  postal_code_categories := as.factor( postal_code)]
-research_project_filtered[,  city_categories := as.factor( city)]
-
-#seeing wich category is used how many times to decide on the industry labels, checking for top 20 most used
-research_project_filtered[
-  , .(category = tolower(trimws(unlist(categories))))
-][
-  , .N, by = category
-][
-  order(-N)
-][1:20]
-
-#determining the top categories and turning them into 5 main categories
-
-#cleaning categories entries and turning all lowercase
-research_project_filtered[, categories_text := tolower(as.character(categories))]
-research_project_filtered[, industry_categorized := "Other"]
-
-research_project_filtered[grepl("restaurants|food|coffee|tea|mexican|italian|burgers|pizza|ice cream|yogurt|chinese",
-           categories_text),
-     industry_categorized := "Food & Drink"]
-
-research_project_filtered[grepl("beauty|spa|hair|nail",
-           categories_text),
-     industry_categorized := "Health & Beauty"]
-
-research_project_filtered[grepl("veterinarians|pets",
-           categories_text),
-     industry_categorized := "Veterinarians & Pet Shops"]
-
-research_project_filtered[grepl("auto|automotive|repair",
-           categories_text),
-     industry_categorized := "Auto & Transport"]
-
-summary(research_project_filtered)
-research_project_filtered[,  industry_categorized := as.factor( industry_categorized)]
-#View(research_project_filtered)
-```
 
 
 ## Density of businesses by industry
