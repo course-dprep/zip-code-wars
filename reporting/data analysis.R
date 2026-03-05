@@ -110,3 +110,4 @@ library(readr)
 library(data.table)
 review <- read_csv('yelp_academic_dataset_review.csv')
 colnames(review)
+
