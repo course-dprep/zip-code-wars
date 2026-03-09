@@ -56,13 +56,11 @@ summary(yelp_business$postal_code) #Already characters don't need to change
 library(tidyverse)
 columns = c("state","postal_code","city","review_count","name","categories","stars")
 research_project <- yelp_business %>% select(all_of(columns))
-#View(research_project) 
 ```
 
 ## Data cleaning (remove all NAs in postal code)
 ```{r, message= FALSE, warning= FALSE}
 research_project_filtered <- research_project %>% filter(postal_code != "")
-#View(research_project_filtered)
 ```
 
 ## Data visualization with ggplot 2 
@@ -75,7 +73,6 @@ ggplot(research_project_filtered, aes(x = stars)) +
   geom_histogram(binwidth = 0.25) +
   labs(title = "Distribution of Yelp Star Ratings",
        x = "Stars", y = "Count")
-#ggsave('ratings.png')
 
 # Stars vs review count
 ggplot(research_project_filtered, aes(x = review_count, y = stars)) +
@@ -83,7 +80,6 @@ ggplot(research_project_filtered, aes(x = review_count, y = stars)) +
   scale_x_log10() +
   labs(title = "Stars vs Review Count",
        x = "Review Count (log scale)", y = "Stars")
-#ggsave('stars_vs_review.png')
 
 # Stars vs business density by ZIP
 zip_density <- research_project_filtered %>%
@@ -96,7 +92,6 @@ research_project_filtered %>%
   scale_x_log10() +
   labs(title = "Business Density vs Yelp Ratings",
        x = "Businesses per ZIP (log)", y = "Stars")
-#ggsave('stars_vs_business density.png')
 
 ```
 
@@ -142,7 +137,6 @@ research_project_filtered[grepl("auto|automotive|repair",
 
 summary(research_project_filtered)
 research_project_filtered[,  industry_categorized := as.factor( industry_categorized)]
-#View(research_project_filtered)
 ```
 
 
@@ -161,7 +155,6 @@ research_project_density <- research_project_filtered %>%
     by = c("postal_code", "industry_categorized")
   )
 
-#View(research_project_density)
 ```
 
 ## Data visualization with ggplot 2 for percentage of businesses by industry
@@ -184,17 +177,23 @@ ggplot(
     y = "Yelp Star Rating"
   )
 ```
-## Plotting Aggregated Ratings in zip code and category level
 
+## Plotting Aggregated Ratings in zip code and category level
 ```{r,message= FALSE, warning= FALSE}
 # make new data with average starts per zip code
 zip_summary <- research_project_density %>%
   group_by(postal_code, industry_categorized, industry_zip_count) %>%
   summarise(avg_stars = mean(stars, na.rm = TRUE),
     .groups = "drop")
+```
 
+
+```{r,message= FALSE, warning= FALSE}
+```
+
+
+```{r,message= FALSE, warning= FALSE}
 ## Smoothed Plotting: 
-```{r, message= FALSE, warning= FALSE}
 ggplot(
   zip_summary_filtered,
   aes(x = industry_zip_count, y = avg_stars)
@@ -268,59 +267,7 @@ ggplot(zip_binned,
 ```
 
 
-## Data Engineering: Merging Datasets (yelp_checkin)
-```{r, message= FALSE, warning= FALSE}
-# Full file link: 
-# https://drive.google.com/file/d/1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG/view?usp=drive_link
 
-library(googledrive)
-
-file_id <- "1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG"
-
-# Download the actual CSV to your working directory
-drive_download(as_id(file_id),
-               path = "yelp_academic_dataset_checkin.csv",
-               overwrite = TRUE)
-
-# Read it in R
-yelp_checkin <- read.csv("yelp_academic_dataset_checkin.csv", stringsAsFactors = FALSE)
-
-# Before merging, first clean checkin data (First cleanse date-time format to keep date only) 
-# Definition of check-in: Check-Ins are a way to keep track of the local businesses you visit and keep your friends updated with your latest comings and goings.
-# Rationale for merging checkin data: To control for differences in customer traffic across businesses, which may influence average Yelp ratings independently of local competitive density. (treat as "control variable")
-
-yelp_checkin_clean <- yelp_checkin %>%
-  separate_rows(date, sep = ",\\s*") %>%
-  mutate(
-    good_date = as.Date(lubridate::ymd_hms(date)),
-    year      = lubridate::year(good_date),
-    week      = lubridate::isoweek(good_date)
-  )
-View(yelp_checkin_clean)
-
-# Count the checkin frequency for each business_id
-business_checkin_count <- yelp_checkin_clean %>% 
-  group_by(business_id) %>% 
-  summarize(checkin_count = n()) 
-
-# Merge the data 
-merged_research_project <- research_project_density %>% left_join(business_checkin_count, by = c("business_id" = "business_id"))
-View(merged_research_project)
-
-# Running the regression model for each business category
-library(broom)
-
-results_by_industry <- merged_research_project %>%
-  group_by(industry_categorized) %>%
-  group_modify(~ tidy(
-    lm(
-      stars ~ industry_zip_count * checkin_count,
-      data = .x
-    )
-  ))
-
-# Summary of results
-View(results_by_industry)
 # Analysis
 
 The analysis section of this study takes the currently cleaned and explored data and tests regression models on the variables to observe the effect of business density on ratings (mdoerated by business category). Therefore the variables used in the regression analyses can be explained as such:
@@ -331,29 +278,31 @@ The analysis section of this study takes the currently cleaned and explored data
 	
 Since in the previous plots it was observed that density is skewed, a log-scale will also be implemented in the regression modelling as well.
 
+## Creating log-scaled density variable (log1p is used to better handle 0 values in density)
 ```{r, message=FALSE, warning=FALSE}
-
-# Creating log-scaled density variable (log1p is used to better handle 0 values in density)
 research_project_regression <- research_project_density %>%
   mutate(
     log_density = log1p(industry_zip_count))
+```
 
-# Base Regression model tested (without interaction effect)
+## Base Regression model tested (without interaction effect)
+```{r, message=FALSE, warning=FALSE}
 base_regression <- lm(stars ~ log_density,data = research_project_regression)
 summary(base_regression)
-
 ```
+
 ## Interpretation of Base Regression model
 The base regression model reports that the p-value for log_density(density of businesses in same zip code) is <2e-16 *** and a t-value of 12.85. This can be interpreted to say that *there is a significant zip code density effect on ratings*. 
 
 The data is then further explored with a more complex regression model, one that includes the effect of business categories on the relationship between business zip code density and ratings given on Yelp:
 
+## Regression model with business categories added:
 ```{r, message=FALSE, warning=FALSE}
-# Regression model with business categories added:
 regression_with_categories <- lm( stars ~ log_density + industry_categorized, data = research_project_regression)
 
 summary(regression_with_categories)
 ```
+
 ## Interpretation of Regression model with business categories
 The regression model including business categories as another variable reports that the p-values for  log_density, industry_categorizedFood & Drink , industry_categorizedHealth & Beauty,industry_categorizedOther, industry_categorizedVeterinarians & Pet Shops all have statistically significant p-values. This observation can be interpreted in a way that shows *both business zip code density and business categories have statistically signifiant impact on ratings* given on Yelp. Here, business zip code density is still assumed to affect all business categories equally.
 
@@ -392,8 +341,8 @@ An ANOVA analysis is also done to confirm that the addition of business categori
 ## Commenting on R Squared
 A relatively low R Squared value is observed with 0.015217. This,however, can be due to the dependent variable Yelp ratings being a subjective variable related to human behavior or the Yelp dataset used being cross-sectional real-world data. The rest of the change in business ratings can be explained with many other factors such as service quality, price level, customer expectations etc. which are not observed in this study.
 
-```{r}
 # Plotting the final regression model:
+```{r}
 ggplot(research_project_regression,
        aes(x = log_density,
            y = stars,
@@ -408,8 +357,64 @@ ggplot(research_project_regression,
 ```
 
 
+# Data Engineering: 
+## Merging datasets (yelp_checkin) to uncover more useful IVs for a more robust regression model
+```{r, message= FALSE, warning= FALSE}
+## Full file link: 
+## https://drive.google.com/file/d/1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG/view?usp=drive_link
 
+library(googledrive)
 
+file_id <- "1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG"
+
+## Download the CSV
+drive_download(as_id(file_id),
+               path = "yelp_academic_dataset_checkin.csv",
+               overwrite = TRUE)
+
+yelp_checkin <- read.csv("yelp_academic_dataset_checkin.csv", stringsAsFactors = FALSE)
+
+## Definition of check-in: Check-Ins are a way to keep track of the local businesses you visit and keep your friends updated with your latest comings and goings.
+
+## Rationale for merging checkin data: To control for differences in customer traffic across businesses, which may influence average Yelp ratings independently of local competitive density.
+
+## Data Cleaning
+yelp_checkin_clean <- yelp_checkin %>%
+  separate_rows(date, sep = ",\\s*") %>%
+  mutate(
+    good_date = as.Date(lubridate::ymd_hms(date)),
+    year      = lubridate::year(good_date),
+    week      = lubridate::isoweek(good_date)
+  )
+View(yelp_checkin_clean)
+
+# Count the checkin frequency for each business_id
+business_checkin_count <- yelp_checkin_clean %>% 
+  group_by(business_id) %>% 
+  summarize(checkin_count = n()) 
+
+# Merge the data 
+merged_research_project <- research_project_density %>% left_join(business_checkin_count, by = c("business_id" = "business_id"))
+View(merged_research_project)
+
+# Regression for each business category
+library(broom)
+
+results_by_industry <- merged_research_project %>%
+  group_by(industry_categorized) %>%
+  group_modify(~ tidy(
+    lm(
+      stars ~ industry_zip_count * checkin_count,
+      data = .x
+    )
+  ))
+```
+
+## Interpretation of results of merged data regression analysis 
+After controlling for review count, business density remains positively and statistically significantly
+associated with Yelp star ratings. Specifically, a one unit increase in log density is linked to a 0.019 
+increase in stars, holding review volume constant. Review count itself is also positively related to ratings, 
+though the effect size per review is very small. However, the overall explanatory power of the model is very low, with an R squared of 0.004, indicating that density and review volume explain only a small fraction of the variation in ratings.
 
 
 
