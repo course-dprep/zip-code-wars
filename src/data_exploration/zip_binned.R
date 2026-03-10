@@ -1,7 +1,10 @@
 library(dplyr)
 
+# Load data
+zip_summary <- read.csv("../gen/temp/zip_summary.csv")
+
 zip_binned <- zip_summary %>%
-  filter(industry_zip_count >= 10) %>%   # optional but recommended
+  filter(industry_zip_count >= 10) %>%
   mutate(
     density_bin = cut(
       industry_zip_count,
@@ -16,3 +19,7 @@ zip_binned <- zip_summary %>%
     n_zips      = n(),
     .groups = "drop"
   )
+
+# Save output for next scripts
+write.csv(zip_binned, "../gen/temp/zip_binned.csv", row.names = FALSE)
+
