@@ -1,5 +1,11 @@
-## Plotting to see if ratings are affected by business density per industry
-ggplot(
+library(ggplot2)
+library(dplyr)
+
+# Load data
+research_project_density <- read.csv("../gen/temp/research_project_density.csv")
+
+# Plotting to see if ratings are affected by business density per industry
+p <- ggplot(
   research_project_density,
   aes(x = industry_zip_count, y = stars)
 ) +
@@ -11,3 +17,6 @@ ggplot(
     x = "Same-Industry Businesses per ZIP (log scale)",
     y = "Yelp Star Rating"
   )
+
+# Save plot output
+ggsave("../gen/output/business_density_effect_on_ratings_per_industry.pdf", plot = p)
