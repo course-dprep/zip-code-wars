@@ -1,5 +1,11 @@
-## Smoothed Plotting: 
-ggplot(
+library(ggplot2)
+library(dplyr)
+
+# Load data
+zip_summary <- read.csv("../gen/temp/zip_summary.csv")
+
+# Smoothed plotting
+p <- ggplot(
   zip_summary,
   aes(x = industry_zip_count, y = avg_stars)
 ) +
@@ -13,3 +19,6 @@ ggplot(
     y = "Average Yelp Star Rating"
   ) +
   theme_minimal()
+
+# Save plot output
+ggsave("../gen/output/avg_rating_vs_industry_business_density.pdf", plot = p)
