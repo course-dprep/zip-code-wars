@@ -1,24 +1,32 @@
-#this file is problematic when it is runned 
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-## Merging datasets (yelp_checkin) to uncover more useful IVs for a more robust regression model
-## Full file link: 
-## https://drive.google.com/file/d/1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG/view?usp=drive_link
+library(dplyr)
+library(tidyr)
+library(lubridate)
 
+if (!requireNamespace("googledrive", quietly = TRUE)) {
+  install.packages("googledrive")
+}
 library(googledrive)
 
-file_id <- "1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG"
+# Load data
+research_project_density <- read.csv("../gen/temp/research_project_density.csv")
 
-## Download the CSV
-drive_download(as_id(file_id),
-               path = "yelp_academic_dataset_checkin.csv",
-               overwrite = TRUE)
+# Download checkin dataset from Google Drive only if not already present
+# Full link: https://drive.google.com/file/d/1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG/view?usp=drive_link
+if (!file.exists("../data/yelp_checkin.csv")) {
+  drive_deauth()  # public access, no login needed
+  drive_download(
+    as_id("1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG"),
+    path = "../data/yelp_checkin.csv",
+    overwrite = TRUE
+  )
+}
 
-yelp_checkin <- read.csv("yelp_academic_dataset_checkin.csv", stringsAsFactors = FALSE)
+yelp_checkin <- read.csv("../data/yelp_checkin.csv", stringsAsFactors = FALSE)
 
-## Definition of check-in: Check-Ins are a way to keep track of the local businesses you visit and keep your friends updated with your latest comings and goings.
-
-## Rationale for merging checkin data: To control for differences in customer traffic across businesses, which may influence average Yelp ratings independently of local competitive density.
-
+# Definition of check-in: way to keep track of local businesses visited
+# Rationale: control for customer traffic which may influence ratings independently of density
 yelp_checkin_clean <- yelp_checkin %>%
   separate_rows(date, sep = ",\\s*") %>%
   mutate(
@@ -26,13 +34,19 @@ yelp_checkin_clean <- yelp_checkin %>%
     year      = lubridate::year(good_date),
     week      = lubridate::isoweek(good_date)
   )
-View(yelp_checkin_clean)
 
-# Count the checkin frequency for each business_id
-business_checkin_count <- yelp_checkin_clean %>% 
-  group_by(business_id) %>% 
-  summarize(checkin_count = n()) 
+# Count checkin frequency for each business_id
+business_checkin_count <- yelp_checkin_clean %>%
+  group_by(business_id) %>%
+  summarize(checkin_count = n())
 
-# Merge the data 
-merged_research_project <- research_project_density %>% left_join(business_checkin_count, by = c("business_id" = "business_id"))
-View(merged_research_project)
+# Save intermediate outputs
+write.csv(yelp_checkin_clean, "../gen/temp/yelp_checkin_clean.csv", row.names = FALSE)
+write.csv(business_checkin_count, "../gen/temp/business_checkin_count.csv", row.names = FALSE)
+
+# Merge datasets
+merged_research_project <- research_project_density %>%
+  left_join(business_checkin_count, by = "business_id")
+
+# Save final output for next scripts
+write.csv(merged_research_project, "../gen/temp/merged_research_project.csv", row.names = FALSE)
