@@ -67,8 +67,70 @@ The findings are summarized in a PDF report, which includes key visualizations, 
 
 This repository contains all data required for the project. The tree diagram below illustrates the repository structure so that the project workflow can be run successully:
 
-
-**Include a tree diagram that illustrates the repository structure*
+project/
+│
+├── Makefile                        ← Root orchestrator (runs all sub-pipelines)
+│
+├── data-preparation/               ← Pipeline 1: Download & clean raw data
+│   ├── Makefile
+│   ├── load_dataset.R              ← Downloads yelp_business.csv
+│   ├── new_dataset.R               ← Creates project-specific dataset
+│   └── clean_data.R                ← Filters and cleans the dataset
+│
+├── data_exploration/               ← Pipeline 2: Visualisation & EDA
+│   ├── Makefile
+│   ├── dist_star_ratings.R         ← Distribution of star ratings
+│   ├── stars_vs_review_count.R     ← Stars vs. review count plot
+│   ├── stars_vs_business_density.R ← Stars vs. business density by ZIP
+│   ├── business_categories.R       ← Splits data into business categories
+│   ├── business_density_by_industry.R  ← Computes density by industry & ZIP
+│   ├── percentage_business_industry.R  ← % of businesses per industry plot
+│   ├── business_density_effect_on_ratings_per_industry.R ← Density effect plot
+│   ├── zip_summary.R               ← Aggregates ratings at ZIP & category level
+│   ├── avg_rating_vs_industry_business_density.R  ← Smoothed avg. rating plot
+│   ├── zip_binned.R                ← Bins ZIP-level data
+│   └── mean_rating_by_business_density.R  ← Mean rating by business density
+│
+├── analysis/                       ← Pipeline 3: Regression analysis
+│   ├── Makefile
+│   ├── log_scaled_density_var.R    ← Log-scales density variable
+│   ├── base_regression.R           ← Runs base OLS regression
+│   ├── regression_with_categories.R ← Adds category dummies & interaction term
+│   ├── final_regression.R          ← Plots final regression results
+│   ├── checkin_data_engineering.R  ← Merges check-in dataset
+│   └── regression_business_category_merge.R ← Regression per business category
+│
+├── data/                           ← Raw data (auto-generated, not tracked)
+│   └── yelp_business.csv           ← Downloaded by load_dataset.R
+│
+└── gen/                            ← All generated outputs (not tracked)
+    │
+    ├── temp/                       ← Intermediate files passed between scripts
+    │   ├── research_project_filtered.csv
+    │   ├── research_project_filtered.txt   ← Sentinel for business_categories.R
+    │   ├── zip_industry_density.csv
+    │   ├── research_project_density.csv
+    │   ├── zip_summary.csv
+    │   ├── zip_binned.csv
+    │   ├── research_project_regression.csv
+    │   ├── regression_with_categories.rds
+    │   ├── regression_with_interaction.rds
+    │   ├── yelp_checkin_clean.csv
+    │   ├── business_checkin_count.csv
+    │   └── merged_research_project.csv
+    │
+    └── output/                     ← Final deliverables (plots & regression tables)
+        ├── dist_star_rating.pdf
+        ├── stars_vs_review_count.pdf
+        ├── stars_vs_business_density.pdf
+        ├── percentage_business_industry.pdf
+        ├── business_density_effect_on_ratings_per_industry.pdf
+        ├── avg_rating_vs_industry_business_density.pdf
+        ├── mean_rating_by_business_density.pdf
+        ├── base_regression.txt
+        ├── regression_with_categories.txt
+        ├── final_regression.pdf
+        └── results_by_industry.txt
 
 ## Dependencies 
 
