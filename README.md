@@ -129,9 +129,9 @@ project/
 
 In order to run the workflow used in this study, the tools and packages listed below should be installed:
 
-- R (≥ 4.2.0) (packages used: ***dplyr, ggplot2, data.table, knitr, rmarkdown, tidyverse***)
-- RStudio
-- LaTeX distribution (TinyTeX or TeX Live for PDF rendering)
+- **R (≥ 4.2.0)** — packages used: `dplyr`, `ggplot2`, `data.table`, `knitr`, `rmarkdown`, `tidyverse`, `googledrive`
+- **RStudio**
+- **LaTeX distribution** — TinyTeX or TeX Live (required for PDF rendering)
 
 
 ## Running Instructions 
