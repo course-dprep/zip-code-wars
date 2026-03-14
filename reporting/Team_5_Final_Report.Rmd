@@ -1,0 +1,128 @@
+---
+title: "Data Prep Project- Team 5- Zip Code Wars"
+authors: "Aimee Wu, Duru Kurgun, Işıl Kanyılmaz, Gabriella Wong, Liane Gnuyen, Olha Zinyak"
+output: pdf_document
+---
+# Introduction
+
+As cities grow and consumer activity becomes increasingly concentrated, understanding the business location landscape becomes more important. Urban economies are shaped by where businesses locate and how densely they cluster as higher density can raise demand and convenience, attracting even more firms and shaping local competitive landscapes (Kopczewska et al., 2024).
+
+In the digital economy, platforms like Yelp play a major role in shaping consumer choices and business visibility, making online ratings an important signal of perceived quality. Business reviews have been found to not only give insights about the quality of a product or service, but have proved to be significant indicators of consumer expectations as well (Chevalier & Mayzlin, 2006). Past studies have shown that online reviews can be shaped by local competition, income levels, and demographics, all of which can vary by geography (Luca, 2011), making the location of the reviewed business highly important. However, the existence of similar businesses in the same location, referred to as “density”, can also intensify competition and raise expectations, which may change how customers evaluate their experiences. 
+
+Furthermore, while it is undeniable that consumer behaviors are impacted by reviews, the magnitude of that impact appears to vary across industries and business types. Past research demonstrates that consumers rely more on reviews for optional services given at beauty salons or restaurants than essential services such as healthcare (Hu, Liu, & Zhang, 2008). It is, therefore, essential to consider the effect the industry of the business plays when reviews are analyzed. Given this tension, this research aims to explore: “Does the density of certain businesses within a postal code associate with higher or lower average Yelp ratings, and how does this relationship vary across business industries?”
+
+For business owners, the findings can inform location strategy and competitive positioning by clarifying when dense clusters are likely to help or hurt evaluations across categories, supporting better benchmarking, service and pricing decisions, and more targeted expansion or franchising choices.
+
+Having discussed all that, this study aims to answer the following research question:
+
+# Research Question 
+
+How does the density of same-category businesses within a ZIP code relate to average Yelp ratings, and does this relationship differ by business industry?
+
+
+# Data
+
+This study includes data from a subset of Yelp data designed for educational purposes called the [Yelp Open Dataset](https://business.yelp.com/data/resources/open-dataset/). It offers actual information on businesses, such as reviews, images, check-ins, and features like parking availability, hours, and atmosphere. This study, as it particularly focuses on business zip codes and business categories, utilizes data from the **business.json** which contains business information such as classifications, attributes, and geographical data.
+***Use of the Yelp Dataset is governed by the terms and conditions outlined in the document added to the prepository along side the yelp_academic_dataset_business.csv in the respository.***
+
+The original data set contains 150346 observations with 14 variables such as States, Postcal Codes (also referred to in this study as "zip codes"), Review Counts, Categories..etc. 
+
+```{r message=FALSE, warning=FALSE}
+#Necessary Packages for this study:
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("data.table")
+#install.packages("knitr")
+#install.packages("rmarkdown")
+#install.packages("googledrive")
+#install.packages("tidyverse")
+
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(knitr)
+library(rmarkdown)
+library(tidyverse)
+library(googledrive)
+
+#Acquiring the data:
+file_id <- "13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x"
+url <- paste0("https://drive.google.com/uc?export=download&id=", file_id)
+
+download.file(url,destfile = "yelp_academic_dataset_business.csv",mode = "wb")
+
+yelp_business <- read.csv("yelp_academic_dataset_business.csv")
+```
+# Methodology 
+
+Data exploration for this study begins with the selection of relevant columns from the yelp_academic_dataset_business.csv file, namely "state", "postal_code", "city", "review_count", "name", "categories", "stars". The columns needed for analysis are extracted from the initial database, and the data are cleaned by removing observations with missing values. The dataset is then explored using ggplot2 visualizations:
+![Industry Distribution vs. Percentage of Business Categories](../gen/output/percentage_business_industry.pdf)
+
+Having plotted several graphs for distributions of star ratings,![Star Ratings vs. Review Count](../gen/output/stars_vs_review_count.pdf) and ![Star Ratings vs. Business Density by zip code](../gen/output/stars_vs_business_density.pdf); the data is reformatted into factor variables where categories will be valuable for the research. Business labels are taken into account to determine the 20 most used business labels, and the businesses are categorized into 5 main industries accordingly.
+
+Once the industry classification procedure is completed, the research focused on the density of businesses within a single postal code. After the density of businesses is determined, several plots are drawn again to see how relationships change according to the industry densities by plotting each industry density against star ratings.
+Remedies are applied to ensure the visuals are easy to interpret such as using smoothing codes together with ggplots. 
+![Average Yelp Star Rating vs Industry Business Density ](../gen/output/avg_rating_vs_industry_business_density.pdf)
+![Industry Business Density vs. Star Ratings ](../gen/output/avg_rating_vs_industry_business_density.pdf)
+
+The study further explores the data by separating business densities across different industries into 3 levels: low density, medium density and high density to see whether relationships are be more prominent across levels.
+
+The study uses Linear Regression with Interaction Terms as the chosen method of analysis after data is explored, so that both the main relationship between the density of businesses within a postal code and Yelp ratings can be examined along with the moderating effect of industry of the business. The predicted model for the study can be seen as such: lm(rating(stars) ~ business_density + business_industry + business_density:business_category)
+
+| Variable Name | Role in Model | Conceptual Definition | Operational Definition | Measurement Level |
+|---------------|--------------|----------------------|-----------------------|-------------------|
+| stars | Dependent variable | Star rating represents the aggregated consumer evaluation of a business’s quality and overall service performance based on user generated online reviews. Online ratings function as electronic word of mouth and influence consumer expectations and purchasing decisions by summarizing collective experiences into an interpretable quality signal (Chevalier & Mayzlin, 2003). | Average Yelp star rating assigned to a business | Continuous variable bounded between 1 and 5 |
+| industry_zip_count | Main independent variable | Industry ZIP density reflects the intensity of local same industry business clustering within a defined geographic unit. According to agglomeration theory, spatial concentration of firms can increase demand and consumer convenience (Alcacer & Chung, 2010). However, higher density can intensify competition and elevate consumer expectations, potentially affecting performance evaluations. | Number of businesses within the same postal code and same industry category | Count variable |
+| industry_categorized | Moderator | Industry categorization captures structural differences in service type and consumer involvement. Consumer reliance on online reviews varies across industries. Reviews tend to exert stronger influence in discretionary and experiential industries such as restaurants and beauty services compared to necessity based services (Hu et al., 2008). Industry type is therefore expected to moderate the relationship between competitive density and consumer evaluations. | Categorical variable with five levels: Food and Drink, Health and Beauty, Auto and Transport, Veterinarians and Pet Shops, Other | Nominal factor variable |
+| review_count | Control variable | Review count represents the volume of consumer generated feedback received by a business. A higher review volume strengthens the credibility and informational value of average ratings, thereby influencing consumer decision making (Duan et al., 2008). | Total number of reviews received by a business | Count variable |
+
+# Results
+
+The analysis section of this study takes the currently cleaned and explored data and tests regression models on the variables to observe the effect of business density on ratings, moderated by business category. Therefore the variables used in the regression analyses can be explained as such:
+	•	Dependent variable: "stars"
+	•	Main predictor: "industry_zip_count"
+	•	Moderator: "industry_categorized"
+	•	Interaction: "industry_zip_count" * "industry_categorized"
+	
+Since in the previous plots it is observed that density is skewed, a log-scale is implemented in the regression modelling as well.
+
+## Interpretation of Base Regression model
+The base regression model reports that the p-value for "log_density" is <2e-16 *** and a t-value of 12.85. This can be interpreted to say that *there is a significant zip code density effect on ratings*. 
+
+The data is then further explored with a more complex regression model, one that includes the effect of business categories on the relationship between business zip code density and ratings given on Yelp:
+
+## Interpretation of Regression model with business categories
+The regression model including business categories as another variable reports that the p-values for "log_density"," industry_categorizedFood & Drink" , "industry_categorizedHealth & Beauty","industry_categorizedOther", "industry_categorizedVeterinarians & Pet Shops" all have statistically significant p-values. This observation can be interpreted in a way that shows *both business zip code density and business categories have statistically signifiant impact on ratings* given on Yelp. Here, business zip code density is still assumed to affect all business categories equally.
+
+The data is then further explored with a third regression model, one that includes the effect of business categories as an interaction term:
+
+## Interpretation of Regression model with business categories as interaction term
+This regression model including business categories as interaction terms suggest several findings:
+* Density increases ratings for businesses in the Food and Drink industry, but the effect is weaker in comparison to the baseline.
+* In Health and Beauty industry, density has a stronger positive effect.
+* The slope is almost 0 for industries listed in the Other category, indicating no meaningful difference.
+* For businesses in the same industry as Veterinarians and Pet Shops, even though there seems to be a positive slope, since the p-value is seen to be not statistically significant, we cannot confidently say that business zip code density effect differs for this type of business.
+All of these results may suggest that *while competitive clustering can enhance ratings in some industries more than others, business industry does moderate the relationship between density and ratings*.
+
+## Interpretation of ANOVA for better model fit
+An ANOVA analysis is also done to confirm that the addition of business categories as an interaction term improves model fit. The p-value is seen to be highly significant, suggesting that the interaction terms do improve the model fit and that business industry does moderate the zip code density–rating relationship.
+
+## Commenting on R Squared
+A relatively low R Squared value is observed with 0.015217. This,however, can be due to the dependent variable Yelp ratings being a subjective variable related to human behavior or the Yelp dataset used being cross-sectional real-world data. The rest of the change in business ratings can be explained with many other factors such as service quality, price level, customer expectations etc. which are not observed in this study.
+
+# References
+
+Alcacer, J., & Chung, W. C. (2010). Location strategies for agglomeration economies. *SSRN Electronic Journal*. https://doi.org/10.2139/ssrn.1555111
+
+Chevalier, J. A., & Mayzlin, D. (2006). The effect of word of mouth on sales: Online book reviews. *Journal of Marketing Research*, 43(3), 345–354. doi:10.1509/jmkr.43.3.345 
+
+Duan, W., Gu, B., & Whinston, A. B. (2008). Do online reviews matter?—An empirical investigation of panel data. *Decision Support Systems, 45(4), 1007–1016*.https://doi.org/10.1016/j.dss.2008.04.001
+
+Hu, N., Liu, L., & Zhang, J. J. (2008). Do online reviews affect product sales? the role of reviewer characteristics and temporal effects.*Information Technology and Management, 9(3), 201–214*. doi:10.1007/s10799-008-0041-2 
+
+Kopczewska, K., Kubara, M., & Kopyt, M. (2024). Population density as the attractor of business to the place. Retrieved from https://www.nature.com/articles/s41598-024-73341-8 
+
+Luca, M. (2011). Reviews, reputation, and revenue: The case of yelp.com. *SSRN Electronic Journal*. doi:10.2139/ssrn.1928601 
+
+
+
