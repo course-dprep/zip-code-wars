@@ -12,9 +12,7 @@
 
   Furthermore, while it is undeniable that consumer behaviors are impacted by reviews, the magnitude of that impact appears to vary across industries and business types. Past research demonstrates that consumers rely more on reviews for optional services given at beauty salons or restaurants than essential services such as healthcare (Hu, Liu, & Zhang, 2008). It is, therefore, essential to consider the effect the industry of the business plays when reviews are analyzed. Given this tension, this research aims to explore: “Does the density of certain businesses within a postal code associate with higher or lower average Yelp ratings, and how does this relationship vary across business industries?”
 
-For business owners, the findings can inform location strategy and competitive positioning by clarifying when dense clusters are likely to help or hurt evaluations across categories, supporting better benchmarking, service and pricing decisions, and more targeted expansion or franchising choices. 
-
-The findings are also relevant for landlords and urban planners, as density patterns influence foot traffic, commercial attractiveness, and rental values.
+For business owners, the findings can inform location strategy and competitive positioning by clarifying when dense clusters are likely to help or hurt evaluations across categories, supporting better benchmarking, service and pricing decisions, and more targeted expansion or franchising choices. The findings are also relevant for landlords and urban planners, as density patterns influence foot traffic, commercial attractiveness, and rental values.
 
 
 ## Data
@@ -26,9 +24,6 @@ The findings are also relevant for landlords and urban planners, as density patt
 
 [Click to open the Table for Raw Data Variables](data/Table-for-Raw-Data-Vairables.html)
   
-
-- How many observations are there in the final dataset? 
-
 ## Variable Definitions
 
 | Variable Name | Role in Model | Conceptual Definition | Operational Definition | Measurement Level |
@@ -50,18 +45,18 @@ The findings are also relevant for landlords and urban planners, as density patt
   The predicted model for the study can be seen as such: lm(rating(stars) ~ business_density + business_industry + business_density:business_category)
 ss_category)
 
-
-The dataset was then explored using ggplot2 visualizations. Having plotted several graphs for distributions of star ratings, stars versus review count and stars versus business density by ZIP (postal code); the data is reformatted into factor variables where categories will be valuable for the research. Business labels are taken into account to determine the 20 most used business labels, and the businesses are categorized into 5 main industries accordingly. Once the industry classification procedure was completed, the research focused on the density of businesses within a single postal code. After the density of businesses is determined, several plots are drawn again to see how relationships change according to the industry densities by plotting each industry density against star ratings. When it is seen that the resulting figures were visually crowded, remedies are applied such as using smoothing codes together with ggplots. The study will further explore the data by separating business densities across different industries into 3 levels: low density, medium density and high density to see whether relationships will be more prominent across levels. The research aims to use Linear Regression with Interaction Terms as the chosen method of analysis after data is explored, so that both the main relationship between the density of businesses within a postal code and Yelp ratings can be examined along with the moderating effect of industry of the business. The predicted model for the study can be seen as such: lm(rating(stars) ~ business_density + business_industry + business_density:business_category)
-
 ## Preview of Findings 
 
+The regression analyses reveal a statistically significant relationship between business density within ZIP codes and average Yelp ratings. Businesses located in areas with higher concentrations of similar establishments tend to experience modest changes in ratings, suggesting that local competitive environments may influence customer evaluations.
 
-- Describe the gist of your findings (save the details for the final paper!)
+Further modeling shows that business industry plays an important moderating role in this relationship. The impact of density is not uniform across sectors; some industries appear to benefit more from clustering than others, while in certain categories the effect is minimal or statistically uncertain.
 
-- How are the findings/end product of the project deployed?
-The findings are summarized in a PDF report, which includes key visualizations, regression results, interpretations, and implications. The report translates statistical results into clear insights on location strategy for business owners across categories.
+An additional model comparison confirms that including industry-based interaction effects significantly improves the explanatory power of the model. Overall, the findings indicate that competitive clustering can influence online ratings, but the magnitude and direction of this effect vary by business category. However, the relatively low explained variance suggests that many other factors beyond local density also contribute to Yelp ratings.
 
-- Explain the relevance of these findings/product. 
+The findings of this study can assist business owners in improving their location strategy and competitive positioning by defining when dense clusters are likely to benefit or damage assessments across categories, allowing for better benchmarking, service and pricing decisions, and more targeted expansion or franchising options.
+
+The findings are summarized in a two RMarkdown files and a PDF report, which includes details regarding data exploration, relevant plots, regression results, interpretations, and implications.
+
 
 ## Repository Overview 
 
@@ -133,16 +128,53 @@ In order to run the workflow used in this study, the tools and packages listed b
 - **RStudio**
 - **LaTeX distribution** — TinyTeX or TeX Live (required for PDF rendering)
 
-
 ## Running Instructions 
 
-To reproduce the analysis:
+To reproduce the analyses performed in this study:
 
-1. Download necessary datasets (**business.json**) from [Yelp Open Dataset](https://business.yelp.com/data/resources/open-dataset/)
-2. Place the following file inside:
+1. Clone the Repository:
+First, clone the repository to your local machine and navigate into the project folder.
 
-(** HERE THE REPOSITORY STUCTURE WILL BE EXPLAINED IN FURTHER DETAIL ONCE THE PROJECT PROGRESSES ENOUGH*)
+On Terminal:
+  git clone <[repository-url](https://github.com/course-dprep/zip-code-wars.git)>
+  cd project
   
+2. Install Required R Packages:
+Open R and install the required packages.
+
+In R:
+ install.packages(c("tidyverse", "data.table", "ggplot2", "readr", "dplyr", "broom"))
+   
+3. Run the Full Pipeline:
+This repository uses Makefiles to automate the workflow. From the root project directory, run:
+
+On Terminal:
+  make
+
+ This command will automatically execute the following steps in order:
+ 
+	1.	Data Preparation (data-preparation/)
+ 
+	•	Loading the Yelp dataset
+	•	Filtering and restructuring the data
+	•	Producing cleaned datasets saved in gen/temp/
+ 
+	2.	Data Exploration (data_exploration/)
+ 
+	•	Generating exploratory visualizations of ratings, density, and industries
+	•	Saving plots in gen/output/
+ 
+	3.	Analysis (analysis/)
+ 
+	•	Creating the log-transformed density variable
+	•	Running regression models
+	•	Saving regression outputs and model summaries
+
+4. Locate Outputs:
+After running the pipeline, results will be generated.
+	•	Temporary processed data:gen/temp/
+	•	Final figures and regression outputs:gen/output/ 
+
 This project adheres to the following best practices to ensure reproducibility:
 
 -	Code executes in a top-to-bottom linear fashion.
