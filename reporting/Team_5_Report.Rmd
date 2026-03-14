@@ -667,18 +667,6 @@ research_project_density_plus <- research_project_plus %>%
   )
 
 # Merge check-ins and review summary
-research_project_regression_plus <- research_project_density_plus %>%
-  left_join(business_checkin_count, by = "business_id") %>%
-  left_join(review_business, by = "business_id") %>%
-  mutate(
-    checkin_count = replace_na(checkin_count, 0),
-    n_reviews_actual = replace_na(n_reviews_actual, 0),
-    avg_engagement = replace_na(avg_engagement, 0),
-    log_density = log1p(industry_zip_count),
-    log_checkin_count = log1p(checkin_count),
-    log_n_reviews = log1p(n_reviews_actual),
-    log_avg_engagement = log1p(avg_engagement)
-  )
 
 # Extended model with review-derived controls
 regression_with_review_controls <- lm(
