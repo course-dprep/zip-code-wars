@@ -1,14 +1,17 @@
-.PHONY: all data-preparation data_exploration analysis clean
+.PHONY: all data-preparation-base data_exploration data-preparation analysis clean
 
-all: data-preparation data_exploration analysis
+all: analysis
 
-data-preparation:
-	make -C data-preparation
+data-preparation-base:
+	make -C data-preparation ../../gen/temp/research_project_filtered.csv
 
-data_exploration: data-preparation
+data_exploration: data-preparation-base
 	make -C data_exploration
 
-analysis: data-preparation data_exploration
+data-preparation: data_exploration
+	make -C data-preparation
+
+analysis: data-preparation
 	make -C analysis
 
 clean:
