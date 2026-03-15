@@ -1,2 +1,11 @@
-# This makefile will be used to automate the
-# different steps in your project.
+all: src reporting
+
+src:
+	make -C src
+
+reporting: 
+	make -C reporting
+
+clean:
+	R -e "unlink('../data', recursive = TRUE)"
+	R -e "unlink('../gen', recursive = TRUE)"
