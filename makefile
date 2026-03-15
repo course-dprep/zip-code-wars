@@ -1,3 +1,4 @@
+.PHONY: all src reporting clean
 all: src reporting
 
 src:
