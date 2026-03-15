@@ -1,3 +1,26 @@
 # Use this file to keep certain files from being versioned (covered in the GitHub part of the course).
-
+# OS files
 .DS_Store
+Thumbs.db
+
+# RStudio local session files
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*.Rproj
+
+# Downloaded datasets
+data/*.csv
+
+# Generated pipeline files
+gen/
+
+# Report rendering: auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
