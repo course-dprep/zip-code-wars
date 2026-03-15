@@ -1,13 +1,7 @@
-all: data-preparation data_exploration analysis reporting
+all: src reporting
 
-data-preparation:
-	make -C data-preparation
-
-data_exploration: data-preparation
-	make -C data_exploration
-
-analysis: data-preparation data_exploration
-	make -C analysis
+src:
+	make -C src
 
 reporting: 
 	make -C reporting
