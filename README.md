@@ -68,61 +68,66 @@ The findings are summarized in a PDF report, which includes key visualizations, 
 This repository contains all data required for the project. The tree diagram below illustrates the repository structure so that the project workflow can be run successully:
 
 ```
-project/
-├── Makefile
-├── data-preparation/
+project-root/
+│
+├── data/                             # raw downloaded datasets
+│   ├── yelp_business.csv
+│   └── yelp_checkin.csv
+│
+├── gen/
+│   ├── temp/                         # intermediate generated data
+│   │   ├── research_project_filtered.csv
+│   │   ├── research_project_filtered.txt
+│   │   ├── zip_industry_density.csv
+│   │   ├── research_project_density.csv
+│   │   ├── zip_summary.csv
+│   │   ├── zip_binned.csv
+│   │   ├── research_project_regression.csv
+│   │   ├── yelp_checkin_clean.csv
+│   │   ├── business_checkin_count.csv
+│   │   ├── merged_research_project.csv
+│   │   ├── regression_with_categories.rds
+│   │   └── regression_with_interaction.rds
+│   │
+│   └── output/                       # final figures and model outputs
+│       ├── distribution_star_ratings.png
+│       ├── stars_vs_review_count.png
+│       ├── stars_vs_business_density.png
+│       ├── percentage_business_industry.png
+│       ├── same_industry_density_vs_ratings.png
+│       ├── avg_rating_vs_industry_business_density.png
+│       ├── mean_rating_by_business_density.png
+│       ├── base_regression.txt
+│       ├── regression_with_categories_summary.txt
+│       ├── final_regression.png
+│       └── results_by_industry.txt
+│
+├── reporting/                        # final report
 │   ├── Makefile
-│   ├── load_dataset.R
-│   ├── new_dataset.R
-│   └── clean_data.R
-├── data_exploration/
-│   ├── Makefile
-│   ├── dist_star_ratings.R
-│   ├── stars_vs_review_count.R
-│   ├── stars_vs_business_density.R
-│   ├── business_categories.R
-│   ├── business_density_by_industry.R
-│   ├── percentage_business_industry.R
-│   ├── business_density_effect_on_ratings_per_industry.R
-│   ├── zip_summary.R
-│   ├── avg_rating_vs_industry_business_density.R
-│   ├── zip_binned.R
-│   └── mean_rating_by_business_density.R
-├── analysis/
-│   ├── Makefile
-│   ├── log_scaled_density_var.R
-│   ├── base_regression.R
-│   ├── regression_with_categories.R
-│   ├── final_regression.R
-│   ├── checkin_data_engineering.R
-│   └── regression_business_category_merge.R
-├── data/
-│   └── yelp_business.csv
-└── gen/
-    ├── temp/
-    │   ├── research_project_filtered.csv
-    │   ├── zip_industry_density.csv
-    │   ├── research_project_density.csv
-    │   ├── zip_summary.csv
-    │   ├── zip_binned.csv
-    │   ├── research_project_regression.csv
-    │   ├── regression_with_categories.rds
-    │   ├── regression_with_interaction.rds
-    │   ├── yelp_checkin_clean.csv
-    │   ├── business_checkin_count.csv
-    │   └── merged_research_project.csv
-    └── output/
-        ├── dist_star_rating.pdf
-        ├── stars_vs_review_count.pdf
-        ├── stars_vs_business_density.pdf
-        ├── percentage_business_industry.pdf
-        ├── business_density_effect_on_ratings_per_industry.pdf
-        ├── avg_rating_vs_industry_business_density.pdf
-        ├── mean_rating_by_business_density.pdf
-        ├── base_regression.txt
-        ├── regression_with_categories.txt
-        ├── final_regression.pdf
-        └── results_by_industry.txt
+│   └── Team_5_Report.Rmd
+│
+├── src/                              # analysis pipeline scripts
+│   ├── data-preparation/
+│   │   ├── Makefile
+│   │   ├── load_dataset.R
+│   │   ├── clean_data.R
+│   │   └── prepare_regression_data.R
+│   │
+│   ├── data_exploration/
+│   │   ├── Makefile
+│   │   ├── basic_plots.R
+│   │   ├── prepare_categories_and_density.R
+│   │   ├── summaries_and_bins.R
+│   │   └── final_density_plots.R
+│   │
+│   └── analysis/
+│       ├── Makefile
+│       ├── regression_models.R
+│       └── regression_visualisation_and_industry_results.R
+│
+├── .gitignore
+├── README.md
+└── Makefile                          # master pipeline controller
 ```
 
 ## Dependencies 
