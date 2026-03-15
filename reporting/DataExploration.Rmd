@@ -1,0 +1,352 @@
+---
+title: "Data Preperation and Exploration"
+output: pdf_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+This project uses data from the Yelp Open Dataset to explore patterns in business information and customer activity. Specifically, we analyze the files yelp_academic_dataset_business.csv and yelp_academic_dataset_checkin.csv, which contain details about businesses and the number of customer check-ins.
+The datasets are stored on Google Drive and loaded into R for analysis. The goal of this exploratory data analysis is to understand the structure of the data and identify patterns in business characteristics.
+
+```{r message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(knitr)
+library(rmarkdown)
+library(tidyverse)
+library(googledrive)
+```
+
+```{r message=FALSE}
+#https://drive.google.com/file/d/13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x/view?usp=share_link
+#https://drive.google.com/file/d/1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG/view?usp=drive_link
+
+file_id <- "13AZqPcwUro0jwsZIv6Q3WXeEn58YD5_x"
+url <- paste0("https://drive.google.com/uc?export=download&id=", file_id)
+download.file(url,destfile = "yelp_academic_dataset_business.csv",mode = "wb")
+yelp_business <- read.csv("yelp_academic_dataset_business.csv")
+
+file_id <- "1TqZIvA5GuiRD5x3w4LFh5E3A-g-5TeXG"
+url <- paste0("https://drive.usercontent.google.com/download?id=",file_id,"&export=download&confirm=t")
+download.file(url,destfile = "yelp_academic_dataset_checkin.csv",mode = "wb")
+yelp_checkin <- read.csv("yelp_academic_dataset_checkin.csv",stringsAsFactors = FALSE)
+
+```
+#Structure of the Business Dataset
+The yelp_business dataset contains 150,346 observations and 14 variables, where each observation represents a business listed on Yelp. The variables include information about the business name, location, ratings, and other descriptive attributes.
+The columns are:
+-hours – information about the opening hours of the business.
+-state – the state where the business is located.
+-postal_code – the ZIP or postal code of the business location.
+-city – the city where the business operates.
+-latitude – the geographic latitude coordinate of the business location.
+-review_count – the total number of reviews a business has received on Yelp.
+-name – the name of the business.
+-attributes – additional characteristics of the business, such as payment options or amenities.
+-business_id – a unique identifier for each business.
+-categories – the categories that describe the type of business (for example restaurants, shopping, or health services).
+-address – the street address of the business.
+-is_open – indicates whether the business is currently open (1) or closed (0).
+-longitude – the geographic longitude coordinate of the business location.
+-stars – the average star rating given by Yelp users.
+```{r}
+str(yelp_business)
+```
+# Structure of the Check-in Dataset
+
+The yelp_checkin dataset contains 131,930 observations and 2 variables. Each observation represents a business and records the timestamps of customer check-ins associated with that business.
+
+The variables in this dataset are:
+
+-business_id – a unique identifier that links each record to a specific business in the yelp_business dataset.
+-date – a character variable containing a list of timestamps representing when customers checked in to the business. Multiple check-in times are stored within a single cell and separated by commas.
+
+Unlike the business dataset, the check-in dataset stores multiple check-in events in a single row rather than one row per event. 
+
+```{r}
+str(yelp_checkin)
+```
+
+# Summary statistics
+```{r}
+summary(yelp_business)
+```
+
+The summary statistics provide an overview of the main variables in the yelp_business dataset. The dataset contains 150,346 businesses, and several numerical variables describe their location and popularity.
+
+The review_count variable shows the number of reviews per business. Businesses have between 5 and 7,568 reviews, with a median of 15 and an average of about 44.9 reviews, indicating that most businesses have relatively few reviews while a small number receive a very large number of reviews.
+
+The stars variable represents the average Yelp rating. Ratings range from 1 to 5 stars, with a median of 3.5 and an average rating of about 3.6, suggesting that most businesses receive moderately positive ratings.
+
+The dataset also includes geographic coordinates. The latitude values range from 27.56 to 53.68, and longitude ranges from –120.10 to –73.20, indicating that the businesses are located across several regions in North America.
+
+Finally, the is_open variable indicates whether a business is currently operating. The mean value of 0.796 suggests that the majority of businesses in the dataset are currently open.
+
+Overall, these statistics provide a first overview of business popularity, ratings, and geographic distribution in the dataset.
+
+
+# Missing Values
+```{r}
+colSums(yelp_business == "")
+sum(colSums(yelp_business == ""))
+```
+After checking for both NA values and empty strings, the yelp_business dataset contains a total of 42,270 missing or empty entries distributed across several columns.
+The most affected columns are:
+hours – 23,223 missing values. Many businesses did not provide their opening hours.
+attributes – 13,744 missing values. Optional features such as Wi-Fi, parking, or payment options are often not reported.
+address – 5,127 missing values, indicating some businesses do not have full address information.
+categories – 103 missing values. Only a small number of businesses lack category labels.
+All other columns, including business_id, name, city, state, latitude, longitude, stars, review_count, and is_open, have complete information.
+```{r}
+colSums(yelp_checkin == "")
+sum(colSums(yelp_checkin == ""))
+```
+A check for missing values in the yelp_checkin dataset shows that there are no missing values in either of the variables. Both the date and business_id columns contain complete information for all 131,930 observations.
+This indicates that each record in the dataset is associated with a valid business identifier and at least one recorded check-in timestamp. 
+
+# Selecting Relevant Variables
+To focus the analysis on the most relevant information, a subset of variables was extracted from the yelp_business dataset. The selected columns include state, postal_code, and city to represent the geographic location of businesses. Additionally, the variables review_count and stars were included as indicators of business popularity and customer ratings. The variables name and categories provide descriptive information about each business and its type.
+By selecting only these variables, a new dataset called research_project was created. This step reduces the complexity of the original dataset and ensures that the analysis focuses only on the variables that are relevant to the research objective.
+
+# Data Cleaning
+After selecting the relevant variables, the dataset was cleaned to ensure data quality. In particular, rows with missing or empty values in the postal_code column were removed. Postal codes are important for identifying the geographic location of businesses and are necessary for any location-based analysis.
+Observations with empty postal code values were filtered out to create a cleaned dataset named research_project_filtered. This ensures that all remaining entries contain valid location information and improves the reliability of further analysis.
+```{r}
+# Select only relevant columns for the analysis
+columns <- c("state", "postal_code", "city", "review_count",
+             "name", "categories", "stars","business_id")
+
+research_project <- yelp_business %>%
+  select(all_of(columns))
+
+research_project_filtered <- research_project %>% filter(postal_code != "")
+```
+
+# Exploratory Analysis of Ratings and Reviews
+
+To explore patterns in the dataset, several visualizations were created using the cleaned data. First, the distribution of Yelp star ratings was examined with a histogram to observe how ratings are spread across businesses. This helps identify the most common rating values and whether the ratings are concentrated within a specific range.
+
+Next, the relationship between star ratings and the number of reviews was analyzed using a scatter plot. Because the number of reviews varies greatly between businesses, the review count was displayed on a logarithmic scale to better visualize the distribution and relationship between these variables.
+
+Finally, the business density per postal code was calculated by counting the number of businesses in each ZIP code. This information was then combined with the dataset to examine how Yelp ratings relate to the number of businesses operating in the same area. A scatter plot was used to visualize this relationship.
+
+These steps help explore how ratings are distributed and how they relate to review activity and local business density in the dataset.
+```{r}
+# Distribution of star ratings
+ggplot(research_project_filtered, aes(x = stars)) +
+  geom_histogram(binwidth = 0.25) +
+  labs(title = "Distribution of Yelp Star Ratings",
+       x = "Stars", y = "Count")
+#ggsave('ratings.png')
+
+# Stars vs review count
+ggplot(research_project_filtered, aes(x = review_count, y = stars)) +
+  geom_point(alpha = 0.2) +
+  scale_x_log10() +
+  labs(title = "Stars vs Review Count",
+       x = "Review Count (log scale)", y = "Stars")
+
+# Stars vs business density by ZIP
+zip_density <- research_project_filtered %>%
+  count(postal_code, name = "zip_business_count")
+
+research_project_filtered %>%
+  left_join(zip_density, by = "postal_code") %>%
+  ggplot(aes(x = zip_business_count, y = stars)) +
+  geom_jitter(alpha = 0.2, width = 0) +
+  scale_x_log10() +
+  labs(title = "Business Density vs Yelp Ratings",
+       x = "Businesses per ZIP (log)", y = "Stars")
+```
+
+
+# Exploring and Grouping Business Categories
+To better understand the types of businesses present in the dataset, the categories variable was examined in more detail. Since each business can belong to multiple categories stored as a comma-separated text field, the values were first processed and standardized by converting them to lowercase and trimming unnecessary spaces. This allowed consistent comparison of category names.
+
+Next, the frequency of individual categories was analyzed to identify the most commonly occurring business types. By counting how often each category appeared, the twenty most frequently used categories were inspected to guide the creation of broader industry groups.
+Based on these frequent categories, businesses were then grouped into a smaller set of broader industry classifications. A new variable called industry_categorized was created to assign each business to one of several main industry groups. These include Food & Drink, Health & Beauty, Veterinarians & Pet Shops, Auto & Transport, and a default category Other for businesses that do not match the defined patterns.
+
+This categorization simplifies the large number of detailed Yelp categories and makes it easier to analyze patterns across broader business sectors in later stages of the analysis. The resulting industry variable was finally converted into a categorical (factor) variable to support further statistical analysis and visualization.
+```{r}
+library(data.table)
+
+setDT(research_project_filtered)
+research_project_filtered[, state_categories := as.factor(state)]
+research_project_filtered[,  postal_code_categories := as.factor( postal_code)]
+research_project_filtered[,  city_categories := as.factor( city)]
+
+#seeing which category is used how many times to decide on the industry labels, checking for top 20 most used
+research_project_filtered[
+  , .(category = tolower(trimws(unlist(categories))))
+][
+  , .N, by = category
+][
+  order(-N)
+][1:20]
+
+#determining the top categories and turning them into 5 main categories
+
+#cleaning categories entries and turning all lowercase
+research_project_filtered[, categories_text := tolower(as.character(categories))]
+research_project_filtered[, industry_categorized := "Other"]
+
+research_project_filtered[grepl("restaurants|food|coffee|tea|mexican|italian|burgers|pizza|ice cream|yogurt|chinese",
+           categories_text),
+     industry_categorized := "Food & Drink"]
+
+research_project_filtered[grepl("beauty|spa|hair|nail",
+           categories_text),
+     industry_categorized := "Health & Beauty"]
+
+research_project_filtered[grepl("veterinarians|pets",
+           categories_text),
+     industry_categorized := "Veterinarians & Pet Shops"]
+
+research_project_filtered[grepl("auto|automotive|repair",
+           categories_text),
+     industry_categorized := "Auto & Transport"]
+
+summary(research_project_filtered)
+research_project_filtered[,  industry_categorized := as.factor( industry_categorized)]
+```
+
+# Plotting Aggregated Ratings in zip code and category level
+To further analyze patterns in Yelp ratings, the data was aggregated at the ZIP code and industry level. First, a summary dataset was created by grouping businesses according to their postal code, industry category, and the number of businesses from the same industry within that ZIP code. For each group, the average star rating was calculated. This aggregation allows the analysis to focus on average performance within local markets rather than individual businesses.
+
+The resulting dataset was then sorted based on the number of businesses in the same industry and ZIP code, which represents industry density in a given area.
+
+A scatter plot was created to visualize the relationship between same-industry business density and the average Yelp rating. Each point represents the average rating for businesses in a specific ZIP code and industry. The x-axis uses a logarithmic scale to better represent areas with very different numbers of businesses. Additionally, the plot is separated into panels by industry category, allowing comparisons across different sectors.
+```{r,message= FALSE, warning= FALSE}
+zip_industry_density <- research_project_filtered %>%
+  group_by(postal_code, industry_categorized) %>%
+  summarise(
+    industry_zip_count = n(),
+    .groups = "drop"
+  )
+
+research_project_density <- research_project_filtered %>%
+  left_join(
+    zip_industry_density,
+    by = c("postal_code", "industry_categorized")
+  )
+
+# make new data with average starts per zip code
+zip_summary <- research_project_density %>%
+  group_by(postal_code, industry_categorized, industry_zip_count) %>%
+  summarise(avg_stars = mean(stars, na.rm = TRUE),
+    .groups = "drop")
+
+# reorder data based on density
+zip_summary <- zip_summary %>% arrange(industry_zip_count)
+```
+
+
+```{r,message= FALSE, warning= FALSE}
+ggplot(
+  zip_summary,
+  aes(x = industry_zip_count, y = avg_stars)
+) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", se = TRUE) +
+  scale_x_log10() +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Average Yelp Rating vs Same-Industry Business Density (Ascending order)",
+    x = "Same-Industry Businesses per ZIP (log scale)",
+    y = "Average Yelp Star Rating"
+  ) +
+  theme_minimal()
+```
+
+# Mean Yelp Ratings by Business Density Bins
+
+To better understand how business concentration affects ratings, the ZIP code data was further binned based on the number of same-industry businesses in each area. Only ZIP codes with at least 10 businesses in a given industry were included to ensure meaningful comparisons. The industry_zip_count values were divided into density bins (e.g., 10–19, 20–49, 50–99, 100–199, 200+ businesses), and for each bin and industry category, the average Yelp rating was calculated along with the number of ZIP codes in that bin.
+
+A scatter plot was then created with mean ratings on the y-axis and density bins on the x-axis. The size of each point represents how many ZIP codes fall into that density bin. Faceting by industry category allows comparisons across different sectors, showing how ratings vary with local competition.
+
+This approach highlights patterns in how average Yelp ratings change with local business density, providing insight into the competitive environment of each industry and whether higher competition is associated with higher or lower customer ratings.
+
+```{r,message= FALSE, warning= FALSE}
+
+zip_binned <- zip_summary %>%
+  filter(industry_zip_count >= 10) %>%   # optional but recommended
+  mutate(
+    density_bin = cut(
+      industry_zip_count,
+      breaks = c(10, 20, 50, 100, 200, Inf),
+      include.lowest = TRUE,
+      right = FALSE
+    )
+  ) %>%
+  group_by(industry_categorized, density_bin) %>%
+  summarise(
+    mean_rating = mean(avg_stars, na.rm = TRUE),
+    n_zips      = n(),
+    .groups = "drop"
+  )
+```
+
+```{r,message= FALSE, warning= FALSE}
+library(ggplot2)
+
+ggplot(zip_binned, aes(x = density_bin, y = mean_rating, size = n_zips)) +
+  geom_point(color = "firebrick") +
+  facet_wrap(~ industry_categorized) +
+  labs(
+    title = "Mean Yelp Rating by Business Density Bin (ZIP level)",
+    x = "Same-Industry Businesses per ZIP",
+    y = "Mean Yelp Rating",
+    size = "Number of ZIP Codes"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank())
+
+```
+
+# Preparing the Check-in Data
+The yelp_checkin dataset records the timestamps of customer visits to each business. A check-in represents a single visit, providing a way to track customer traffic, which can influence ratings independently of business density.
+
+To make this data usable for analysis, the date column was first split so that each individual timestamp occupies its own row. Then, the timestamps were converted to proper date objects using lubridate, and additional temporal features were extracted:
+year – the calendar year of the check-in
+week – the ISO week number of the year
+
+This cleaned dataset, yelp_checkin_clean, allows the analysis to account for the frequency and timing of customer visits, enabling a more accurate examination of the relationship between business density, check-in traffic, and Yelp ratings.
+
+```{r}
+yelp_checkin_clean <- yelp_checkin %>%
+  separate_rows(date, sep = ",\\s*") %>%
+  mutate(
+    good_date = as.Date(lubridate::ymd_hms(date)),
+    year = lubridate::year(good_date),
+    week = lubridate::isoweek(good_date)
+  )
+
+# Count checkin frequency for each business_id
+business_checkin_count <- yelp_checkin_clean %>%
+  group_by(business_id) %>%
+  summarize(checkin_count = n(), .groups = "drop")
+```
+
+#Merging Business and Check-in Data
+To incorporate information about customer traffic, the cleaned check-in data was aggregated to compute the total number of check-ins per business. This aggregated check-in count provides an estimate of how frequently each business is visited, which can influence Yelp ratings independently of local business density.
+
+The aggregated check-in data was then merged with the main business dataset (research_project_density) using the business_id as a key. The resulting dataset, merged_research_project, combines:
+Business characteristics and ratings
+Industry and ZIP-level density
+Customer traffic (check-in counts)
+
+This merged dataset allows for more comprehensive analysis, enabling the study of how both local competition and customer activity relate to Yelp ratings across different industries.
+```{r}
+# Merge datasets
+merged_research_project <- research_project_density %>%
+  left_join(business_checkin_count, by = "business_id")
+
+```
+
