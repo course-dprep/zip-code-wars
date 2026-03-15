@@ -89,10 +89,19 @@ Since in the previous plots it is observed that density is skewed, a log-scale i
 ## Interpretation of Base Regression model
 The base regression model reports that the p-value for "log_density" is <2e-16 *** and a t-value of 12.85. This can be interpreted to say that *there is a significant zip code density effect on ratings*. 
 
+```{r echo=FALSE}
+cat(readLines("../gen/output/base_regression.txt"), sep = "\n")
+```
+
 The data is then further explored with a more complex regression model, one that includes the effect of business categories on the relationship between business zip code density and ratings given on Yelp:
 
 ## Interpretation of Regression model with business categories
 The regression model including business categories as another variable reports that the p-values for "log_density"," industry_categorizedFood & Drink" , "industry_categorizedHealth & Beauty","industry_categorizedOther", "industry_categorizedVeterinarians & Pet Shops" all have statistically significant p-values. This observation can be interpreted in a way that shows *both business zip code density and business categories have statistically signifiant impact on ratings* given on Yelp. Here, business zip code density is still assumed to affect all business categories equally.
+
+```{r echo=FALSE}
+cat(readLines("../gen/output/regression_with_categories_summary.txt"), sep = "\n")
+```
+
 
 The data is then further explored with a third regression model, one that includes the effect of business categories as an interaction term:
 
@@ -103,6 +112,11 @@ This regression model including business categories as interaction terms suggest
 * The slope is almost 0 for industries listed in the Other category, indicating no meaningful difference.
 * For businesses in the same industry as Veterinarians and Pet Shops, even though there seems to be a positive slope, since the p-value is seen to be not statistically significant, we cannot confidently say that business zip code density effect differs for this type of business.
 All of these results may suggest that *while competitive clustering can enhance ratings in some industries more than others, business industry does moderate the relationship between density and ratings*.
+
+```{r echo=FALSE}
+cat(readLines("../gen/output/results_by_industry.txt"), sep = "\n")
+```
+![Final Regression Plot](../gen/output/final_regression.pdf)
 
 ## Interpretation of ANOVA for better model fit
 An ANOVA analysis is also done to confirm that the addition of business categories as an interaction term improves model fit. The p-value is seen to be highly significant, suggesting that the interaction terms do improve the model fit and that business industry does moderate the zip code density–rating relationship.
