@@ -10,7 +10,7 @@ analysis: data-preparation data_exploration
 	make -C analysis
 
 reporting: 
-  make -C reporting
+	make -C reporting
 
 clean:
 	R -e "unlink('../data', recursive = TRUE)"
